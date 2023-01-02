@@ -1,48 +1,49 @@
-const {User} = require("../MyModels/UserModel");
+const {User} = require("../models/User.js");
+const jwt = require("jsonwebtoken");
 
-// UserDTO = {
-//     username: String,
-//     password: String,
-//     age: Number
-// }
+
+const UserDTO = {
+    email : String,
+    password: String
+}
+
+
 
 class UserService {
 
     /**
-     * 
+     * @desc This function adds a user to the mongoose database
      * @param {UserDTO} userDTO 
-     */
-    createUser = async ( userDTO /** UserDTO */ ) => {
-
-        const user = new User(userDTO);
-        
-        return await user.save();
-    }
-
-    retrieveUsers = async () => {
-        const allUsers = await User.find();
-        return allUsers;
-    }
-    /**
-     * @desc Finds a user with the matchiung userrname and returns. if no user is found,
-     * returnas null
-     * @param {String} username 
      * @returns {Promise<User>}
      */
-    findByUserName = async ( username /** string */) => {
-        const finduser = await User.findOne({username: new RegExp(username, "i")});
-        return finduser;
+    addUser = async (userDTO) => {
+        const newUser = new User(userDTO);
+        const savedUser = await newUser.save();
+        return savedUser;
     }
 
 
-    updateDetails = async (username, updatedUser) => {
-        const updateUser = await User.updateMany({username: username}, {
-            $set: updatedUser
-        })
-        return await this.findByUserName(username);
+    /**
+     * 
+     * @param {UserDTO} userDTO 
+     * @returns {Promise<String>} the encrypted user Id in the form {id: userId}
+     */
+    signin = async (userDTO) => {
+       
+        const user = await User.findOne({email: userDTO.email, password: userDTO.password})
+        if(user !== null){
+            // if user exists, use jwt to encrypt _id
+            const userId = user._id;
+            const dataToEncrypt = { id: userId};
+            const userToken = jwt.sign(dataToEncrypt, "secret", {expiresIn: '30d'});
+            return userToken;
+
+        } else{
+            return null;
+        }
 
     }
-
 }
+
 
 module.exports = {UserService};
